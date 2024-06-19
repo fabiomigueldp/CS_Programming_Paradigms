@@ -1,0 +1,1 @@
+{-Crie uma função para calcular a área de uma circunferência. Teste a função anterior utilizando let.-}

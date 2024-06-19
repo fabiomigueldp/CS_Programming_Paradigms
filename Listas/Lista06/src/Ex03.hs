@@ -1,0 +1,1 @@
+{-Utilizando recursividade e sem usar o operador *, crie a função multiplica x y.-}
