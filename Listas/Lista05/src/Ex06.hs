@@ -3,4 +3,4 @@ sobeDesce (a, b) = (a + 1, b - 1)
 
 main :: IO ()
 main = do
-    print (sobeDesce (10, 5)) -- Deve imprimir (11, 4)
+    print (sobeDesce (10, 5))
