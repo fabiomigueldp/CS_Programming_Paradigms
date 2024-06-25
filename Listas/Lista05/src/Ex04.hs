@@ -6,5 +6,5 @@ decremento x = x - 1
 
 main :: IO ()
 main = do
-    print (incremento 5) -- Deve imprimir 6
-    print (decremento 5) -- Deve imprimir 4
+    print (incremento 5)
+    print (decremento 5)
