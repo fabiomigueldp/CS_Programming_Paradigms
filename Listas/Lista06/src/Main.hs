@@ -1,11 +1,13 @@
 import Data.Char (toUpper)
+import Control.Exception (catch, SomeException)
 
 -- 1. Função para calcular a área de uma circunferência
-areaCircunferencia :: Float -> Float
 areaCircunferencia r = pi * r^2
 
+-- Exemplo de teste utilizando let
+testAreaCircunferencia = let r = 5 in areaCircunferencia r
+
 -- 2. Função para identificar o tipo de triângulo
-tipoTriangulo :: Float -> Float -> Float -> String
 tipoTriangulo a b c
   | a + b <= c || a + c <= b || b + c <= a = "NAOTRI"
   | a == b && b == c = "Equilátero"
@@ -13,12 +15,13 @@ tipoTriangulo a b c
   | otherwise = "Escaleno"
 
 -- 3. Função recursiva para multiplicação sem usar operador *
-multiplica :: Int -> Int -> Int
+multiplica :: (Num a, Ord a) => a -> a -> a
 multiplica _ 0 = 0
-multiplica x y = x + multiplica x (y - 1)
+multiplica x y
+  | y > 0     = x + multiplica x (y - 1)
+  | y < 0     = - multiplica x (-y)
 
 -- 4. Função recursiva para multiplicação de naturais sem usar operador *
-multiplicaNaturais :: Int -> Int -> Int
 multiplicaNaturais _ 0 = 0
 multiplicaNaturais x y = x + multiplicaNaturais x (y - 1)
 
@@ -29,17 +32,24 @@ menor x y z = min x (min y z)
 maior :: Ord a => a -> a -> a -> a
 maior x y z = max x (max y z)
 
+-- 5. EXTRA
+maior' :: Ord a => a -> a -> a -> a
+maior' x y z = case filter (/= menor x y z) [x, y, z] of
+  []    -> menor x y z
+  (m:[]) -> m
+  (m:xs) -> max m (head xs)
+
 -- 6. Função XOR
 xor :: Bool -> Bool -> Bool
 xor a b = (a || b) && not (a && b)
 
 -- 7. Função para clonar números em uma lista
-clonaNumeros :: [Int] -> [Int]
+clonaNumeros :: [a] -> [a]
 clonaNumeros [] = []
 clonaNumeros (x:xs) = x : x : clonaNumeros xs
 
 -- 8. Função para somar os dois primeiros valores de uma lista
-somaDoisPrimeiros :: [Int] -> Int
+somaDoisPrimeiros :: Num a => [a] -> a
 somaDoisPrimeiros (x:y:_) = x + y
 somaDoisPrimeiros _ = 0
 
@@ -63,7 +73,7 @@ soMinusculas = filter (`elem` ['a'..'z'])
 substituiVogais :: String -> String
 substituiVogais = map (\c -> if c `elem` "aeiou" then toUpper c else c)
 
--- 14. Função para adicionar " Friboi" a cada string em uma lista
+-- 14. Função para adicionar "Friboi" a cada string em uma lista
 adicionaFriboi :: [String] -> [String]
 adicionaFriboi = map (++ " Friboi")
 
@@ -112,6 +122,39 @@ menu = do
   putStrLn "18. Múltiplos de 3 de 0 a 300"
   putStrLn "0. Sair"
 
+-- Função para ler e validar entradas
+readAndValidate :: Read a => String -> (a -> Bool) -> IO a
+readAndValidate prompt validator = do
+  putStrLn prompt
+  input <- getLine
+  case reads input of
+    [(value, "")] | validator value -> return value
+    _ -> do
+      putStrLn "Entrada inválida, tente novamente."
+      readAndValidate prompt validator
+
+readAndValidateBool :: IO Bool
+readAndValidateBool = do
+  putStrLn "Digite um valor booleano (True/False) (ex: True):"
+  input <- getLine
+  case input of
+    "True"  -> return True
+    "False" -> return False
+    _       -> do
+      putStrLn "Entrada inválida, tente novamente."
+      readAndValidateBool
+
+-- Função para ler lista, necessária para especificar o tipo ao chamá-la
+readAndValidateList :: Read a => String -> IO [a]
+readAndValidateList prompt = do
+  putStrLn prompt
+  input <- getLine
+  case reads input of
+    [(value, "")] -> return value
+    _ -> do
+      putStrLn "Entrada inválida, tente novamente."
+      readAndValidateList prompt
+
 -- Função principal
 main :: IO ()
 main = loop
@@ -121,106 +164,112 @@ loop :: IO ()
 loop = do
   menu
   escolha <- getLine
+  putStrLn "\n-----------------------------\n"
   case escolha of
     "1" -> do
-      putStrLn "Digite o raio:"
-      r <- readLn
-      print $ areaCircunferencia r
+      r <- readAndValidate "Digite o raio (ex: 5):" (\x -> x >= 0)
+      let area = areaCircunferencia r
+      putStrLn $ "Área da circunferência de raio " ++ show r ++ " é " ++ show area
+      putStrLn "\n-----------------------------\n"
       loop
     "2" -> do
-      putStrLn "Digite os lados do triângulo:"
-      a <- readLn
-      b <- readLn
-      c <- readLn
-      putStrLn $ tipoTriangulo a b c
+      a <- readAndValidate "Digite o primeiro lado (ex: 3):" (\x -> x > 0)
+      b <- readAndValidate "Digite o segundo lado (ex: 4):" (\x -> x > 0)
+      c <- readAndValidate "Digite o terceiro lado (ex: 5):" (\x -> x > 0)
+      putStrLn $ "Tipo do triângulo: " ++ tipoTriangulo a b c
+      putStrLn "\n-----------------------------\n"
       loop
     "3" -> do
-      putStrLn "Digite dois números para multiplicar:"
-      x <- readLn
-      y <- readLn
-      print $ multiplica x y
+      x <- readAndValidate "Digite o primeiro número para multiplicar (ex: 3):" (\_ -> True) :: IO Double -- Tipo necessário para evitar ambiguidades
+      y <- readAndValidate "Digite o segundo número para multiplicar (ex: 4):" (\_ -> True) :: IO Double -- Tipo necessário para evitar ambiguidades
+      putStrLn $ "Resultado: " ++ show (multiplica x y)
+      putStrLn "\n-----------------------------\n"
       loop
     "4" -> do
-      putStrLn "Digite dois números naturais para multiplicar:"
-      x <- readLn
-      y <- readLn
-      print $ multiplicaNaturais x y
+      x <- readAndValidate "Digite o primeiro número natural para multiplicar (ex: 3):" (\x -> x >= 0)
+      y <- readAndValidate "Digite o segundo número natural para multiplicar (ex: 4):" (\x -> x >= 0)
+      putStrLn $ "Resultado: " ++ show (multiplicaNaturais x y)
+      putStrLn "\n-----------------------------\n"
       loop
     "5" -> do
-      putStrLn "Digite três valores:"
-      x <- readLn
-      y <- readLn
-      z <- readLn
+      x <- readAndValidate "Digite o primeiro valor (ex: 3):" (\_ -> True) :: IO Int -- Tipo necessário para evitar ambiguidades
+      y <- readAndValidate "Digite o segundo valor (ex: 4):" (\_ -> True) :: IO Int -- Tipo necessário para evitar ambiguidades
+      z <- readAndValidate "Digite o terceiro valor (ex: 5):" (\_ -> True) :: IO Int -- Tipo necessário para evitar ambiguidades
       putStrLn $ "Menor valor: " ++ show (menor x y z)
       putStrLn $ "Maior valor: " ++ show (maior x y z)
+      putStrLn "\n-----------------------------\n"
       loop
     "6" -> do
-      putStrLn "Digite dois valores booleanos (True/False):"
-      a <- readLn
-      b <- readLn
-      print $ xor a b
+      a <- readAndValidateBool
+      b <- readAndValidateBool
+      putStrLn $ "Resultado: " ++ show (xor a b)
+      putStrLn "\n-----------------------------\n"
       loop
     "7" -> do
-      putStrLn "Digite uma lista de números:"
-      lista <- readLn
-      print $ clonaNumeros lista
+      lista <- readAndValidateList "Digite uma lista de números (ex: [1,2,3]):" :: IO [Int] -- Tipo necessário para evitar ambiguidades
+      putStrLn $ "Resultado: " ++ show (clonaNumeros lista)
+      putStrLn "\n-----------------------------\n"
       loop
     "8" -> do
-      putStrLn "Digite uma lista de números:"
-      lista <- readLn
-      print $ somaDoisPrimeiros lista
+      lista <- readAndValidateList "Digite uma lista de números (ex: [1,2,3]):" :: IO [Int] -- Tipo necessário para evitar ambiguidades
+      putStrLn $ "Resultado: " ++ show (somaDoisPrimeiros lista)
+      putStrLn "\n-----------------------------\n"
       loop
     "9" -> do
-      putStrLn "Digite um número:"
-      n <- readLn
-      print $ listaAteAbs n
+      n <- readAndValidate "Digite um número (ex: -5):" (\_ -> True) :: IO Int -- Tipo necessário para evitar ambiguidades
+      putStrLn $ "Resultado: " ++ show (listaAteAbs n)
+      putStrLn "\n-----------------------------\n"
       loop
     "10" -> do
-      putStrLn "Digite uma lista de números:"
-      lista <- readLn
-      print $ parOuImpar lista
+      lista <- readAndValidateList "Digite uma lista de números (ex: [1,2,3]):" :: IO [Int] -- Tipo necessário para evitar ambiguidades
+      putStrLn $ "Resultado: " ++ show (parOuImpar lista)
+      putStrLn "\n-----------------------------\n"
       loop
     "11" -> do
-      putStrLn "Digite uma lista de números:"
-      lista <- readLn
-      print $ soPar lista
+      lista <- readAndValidateList "Digite uma lista de números (ex: [1,2,3]):" :: IO [Int] -- Tipo necessário para evitar ambiguidades
+      putStrLn $ "Resultado: " ++ show (soPar lista)
+      putStrLn "\n-----------------------------\n"
       loop
     "12" -> do
-      putStrLn "Digite uma string:"
+      putStrLn "Digite uma string (ex: \"Hello World\"):"
       str <- getLine
-      print $ soMinusculas str
+      putStrLn $ "Resultado: " ++ show (soMinusculas str)
+      putStrLn "\n-----------------------------\n"
       loop
     "13" -> do
-      putStrLn "Digite uma string:"
+      putStrLn "Digite uma string (ex: \"Ricardo\"):"
       str <- getLine
-      print $ substituiVogais str
+      putStrLn $ "Resultado: " ++ show (substituiVogais str)
+      putStrLn "\n-----------------------------\n"
       loop
     "14" -> do
-      putStrLn "Digite uma lista de strings:"
-      lista <- readLn
-      print $ adicionaFriboi lista
+      lista <- readAndValidateList "Digite uma lista de strings (ex: [\"Joao\", \"Maria\", \"oi\"]):" :: IO [String] -- Tipo necessário para evitar ambiguidades
+      putStrLn $ "Resultado: " ++ show (adicionaFriboi lista)
+      putStrLn "\n-----------------------------\n"
       loop
     "15" -> do
-      putStrLn "Digite um valor e uma lista:"
-      val <- readLn
-      lista <- readLn
-      print $ pertence val lista
+      val <- readAndValidate "Digite um valor (ex: 3):" (\_ -> True) :: IO Int -- Tipo necessário para evitar ambiguidades
+      lista <- readAndValidateList "Digite uma lista (ex: [1,2,3,4]):" :: IO [Int] -- Tipo necessário para evitar ambiguidades
+      putStrLn $ "Resultado: " ++ show (pertence val lista)
+      putStrLn "\n-----------------------------\n"
       loop
     "16" -> do
-      putStrLn "Digite uma lista:"
-      lista <- readLn
-      print $ filtraLista lista
+      lista <- readAndValidateList "Digite uma lista (ex: [1,2,2,3,3]):" :: IO [Int] -- Tipo necessário para evitar ambiguidades
+      putStrLn $ "Resultado: " ++ show (filtraLista lista)
+      putStrLn "\n-----------------------------\n"
       loop
     "17" -> do
-      putStrLn "Digite um número n e uma lista:"
-      n <- readLn
-      lista <- readLn
-      print $ primeirosN n lista
+      n <- readAndValidate "Digite um número n (ex: 3):" (\_ -> True) :: IO Int -- Tipo necessário para evitar ambiguidades
+      lista <- readAndValidateList "Digite uma lista (ex: [1,2,3,4,5]):" :: IO [Int] -- Tipo necessário para evitar ambiguidades
+      putStrLn $ "Resultado: " ++ show (primeirosN n lista)
+      putStrLn "\n-----------------------------\n"
       loop
     "18" -> do
-      print multiplosDe3
+      putStrLn $ "Resultado: " ++ show multiplosDe3
+      putStrLn "\n-----------------------------\n"
       loop
     "0" -> putStrLn "Saindo..."
     _   -> do
       putStrLn "Opção inválida, tente novamente."
+      putStrLn "\n-----------------------------\n"
       loop
